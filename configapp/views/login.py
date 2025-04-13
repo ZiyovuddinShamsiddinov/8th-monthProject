@@ -1,4 +1,4 @@
-from functools import cache
+from django.core.cache import cache
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import password_changed
 from django.db.models.fields import return_None
@@ -17,11 +17,13 @@ from ..serializers.login_serializers import *
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 import random
+from ..tokens.get_token import *
 
 
 class LoginApi(APIView):
     permission_classes = [AllowAny]
 
+    @swagger_auto_schema(request_body=LoginSerializer)
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -46,6 +48,7 @@ class PhoneSendOTP(APIView):
                 })
             else:
                 key = send_otp()
+                print(key,"==================")
                 if key:
                     cache.set(phone_number, key, 600)
 
@@ -57,6 +60,7 @@ class PhoneSendOTP(APIView):
 def send_otp():
     otp = str(random.randint(1001, 9999))
     return otp
+
 
 class VerifySMS(APIView):
     @swagger_auto_schema(request_body=VerifySMSSerializer)
@@ -79,20 +83,21 @@ class VerifySMS(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class RegisterUserApi(APIView):
     @swagger_auto_schema(request_body=UserSerializer)
-    def post(self,requset):
-        serializer=UserSerializer(data=requset.data)
+    def post(self, requset):
+        serializer = UserSerializer(data=requset.data)
         if serializer.is_valid(raise_exception=True):
-            password=serializer.validated_data.get('password')
-            serializer.validated_data['password']=make_password(password)
+            password = serializer.validated_data.get('password')
+            serializer.validated_data['password'] = make_password(password)
             serializer.save()
             return Response({
-                'status':True,
-                'details':'Account create'
+                'status': True,
+                'details': 'Account create'
             })
 
-    def get(self,request):
-        users=User.objects.all().order_by('-id')
-        serializer=UserSerializer(users,many=True)
+    def get(self, request):
+        users = User.objects.all().order_by('-id')
+        serializer = UserSerializer(users, many=True)
         return Response(data=serializer.data)

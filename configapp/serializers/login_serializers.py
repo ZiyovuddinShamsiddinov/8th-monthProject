@@ -4,18 +4,15 @@ from ..models.auth_user import *
 from ..models.model_group import *
 from ..models.model_teacher import *
 from ..models.model_student import *
-
+from rest_framework import serializers
+from configapp.models.auth_user import User
+from configapp.models.model_teacher import Teacher
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id','phone_number','password','email','is_active','is_teacher','is_staff','is_admin','is_student')
 
-
-class TeacherSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Teacher
-        fields = ('id','user','full_name','course','department')
 
 class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -57,22 +54,22 @@ class SMSSerializer(serializers.Serializer):
 
 class VerifySMSSerializer(serializers.Serializer):
     phone_number=serializers.CharField()
-    varification_code=serializers.CharField()
+    verification_code=serializers.CharField()
 
 class LoginSerializer(serializers.Serializer):
-    phone = serializers.CharField()
+    phone_number = serializers.CharField()
     password = serializers.CharField()
 
     def validate(self, attrs):
-        phone = attrs.get("phone")
+        phone_number = attrs.get("phone_number")
         password = attrs.get("password")
 
         try:
-            user = User.objects.get(phone=phone)
+            user = User.objects.get(phone_number=phone_number)
         except User.DoesNotExist:
             raise serializers.ValidationError({"success": False, "details": "User does not exist"})
 
-        auth_user = authenticate(phone=phone, password=password)
+        auth_user = authenticate(phone_number=phone_number, password=password)
         if auth_user is None:
             raise serializers.ValidationError({"success": False, "detail": "Invalid phone or password"})
 
