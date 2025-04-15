@@ -9,11 +9,9 @@ from rest_framework import status
 from django.contrib.auth import get_user_model
 from ..models.model_student import *
 from ..models.model_group import *
-from ..models.model_teacher import *
 from ..models.auth_user import *
 from ..serializers.login_serializers import *
-from ..serializers.student_serializer import StudentSerializer
-from ..serializers.teacher_serializer import *
+from ..serializers.student_serializer import *
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -24,32 +22,31 @@ class StudentApi(APIView):
     @swagger_auto_schema(responses={200: StudentSerializer(many=True)})
     def get(self, request):
         data = {'success': True}
-        student = Student.objects.all()
+        student = Teacher.objects.all()
         serializer = StudentSerializer(student, many=True)
-        data["teacher"] = serializer.data
+        data["student"] = serializer.data
         return Response(data=data)
 
-    @swagger_auto_schema(request_body=StudentSerializer)
+    @swagger_auto_schema(request_body=StudentPostSerializer)
     def post(self, request):
         data = {"success": True}
-        user = request.data["user"]
-        student = request.data["student"]
-        phone_number = user["phone_number"]
+        user = request.data.get("user")
+        student = request.data.get("student")
+        user_serializer = UserSerializer(data=user)
 
-        user_serialazer = UserSerializer(data=user)
-        if user_serialazer.is_valid(raise_exception=True):
-            user_serialazer.validated_data['password'] = make_password(user_serialazer.validated_data['password'])
-            user_serialazer.validated_data['is_active'] = True
-            user_serialazer.validated_data['is_teacher'] = True
-            user = user_serialazer.save()
+        if user_serializer.is_valid(raise_exception=True):
+            user_serializer.validated_data['password'] = make_password(user_serializer.validated_data['password'])
+            user_serializer.validated_data['is_active'] = True  #
+            user_serializer.validated_data['is_student'] = True
+            user = user_serializer.save()
 
             student["user"] = user.id
-            student_serializer = TeacherSerializer(data=student)
+            student_serializer = StudentSerializer(data=student)
             if student_serializer.is_valid(raise_exception=True):
                 student_serializer.save()
-                data["user"] = user_serialazer.data
-                data["teacher"] = student_serializer.data
-                return Response(data=data)
-            return Response(data=student_serializer.errors)
+                data["user"] = user_serializer.data
+                data["student"] = student_serializer.data
+                return Response(data=data, status=status.HTTP_201_CREATED)
 
-        return Response(data=user_serialazer.errors)
+            return Response(data=student_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(data=user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)

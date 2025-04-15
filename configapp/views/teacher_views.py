@@ -28,35 +28,55 @@ class TeacherApi(APIView):
         data["teacher"] = serializer.data
         return Response(data=data)
 
-    @swagger_auto_schema(request_body=TeacherSerializer)
+    # @swagger_auto_schema(request_body=TeacherPostSerializer)
+    # def post(self, request):
+    #     data = {"success": True}
+    #     user = request.data["user"]
+    #     teacher = request.data["teacher"]
+    #     phone_number = user["phone_number"]
+    #     user_serialazer = UserSerializer(data=user)
+    #
+    #     if user_serialazer.is_valid(raise_exception=True):
+    #         user_serialazer.is_active = True
+    #         user_serialazer.is_teacher = True
+    #         user_serialazer.password = (
+    #             make_password(user_serialazer.validated_data.get("password"))
+    #         )
+    #         user = user_serialazer.save()
+    #
+    #         user_id = User.objects.filter(phone_number=phone_number).values('id')[0]['id']
+    #         teacher["user"] = user_id
+    #         teacher_serializer = TeacherSerializer(data=teacher)
+    #         if teacher_serializer.is_valid(raise_exception=True):
+    #             teacher_serializer.save()
+    #             data["user"] = user_serialazer.data
+    #             data["teacher"] = teacher_serializer.data
+    #             return Response(data=data)
+    #         return Response(data=teacher_serializer.errors)
+    #     return Response(data=user_serialazer.errors)
+
+    @swagger_auto_schema(request_body=TeacherPostSerializer)
     def post(self, request):
         data = {"success": True}
-        user = request.data["user"]
-        teacher = request.data["teacher"]
-        phone_number = user["phone_number"]
+        user = request.data.get("user")
+        teacher = request.data.get("teacher")
+        #phone_number=user["phone_number]
+        user_serializer = UserSerializer(data=user)
 
-        user_serialazer = UserSerializer(data=user)
-        if user_serialazer.is_valid(raise_exception=True):
-            user_serialazer.validated_data['password'] = make_password(user_serialazer.validated_data['password'])
-            user_serialazer.validated_data['is_active'] = True
-            user_serialazer.validated_data['is_teacher'] = True
-            user = user_serialazer.save()
+        if user_serializer.is_valid(raise_exception=True):
+            user_serializer.validated_data['password'] = make_password(user_serializer.validated_data['password'])
+            user_serializer.validated_data['is_active'] = True #
+            user_serializer.validated_data['is_teacher'] = True
+            user = user_serializer.save()
 
             teacher["user"] = user.id
             teacher_serializer = TeacherSerializer(data=teacher)
             if teacher_serializer.is_valid(raise_exception=True):
                 teacher_serializer.save()
-                data["user"] = user_serialazer.data
+                data["user"] = user_serializer.data
                 data["teacher"] = teacher_serializer.data
-                return Response(data=data)
-            return Response(data=teacher_serializer.errors)
+                return Response(data=data, status=status.HTTP_201_CREATED)
 
-        return Response(data=user_serialazer.errors)
-
-
-        # serializer = TeacherSerializer(data=request.data)
-        # if serializer.is_valid(raise_exception=True):
-        #     serializer.save()
-        #     data["data"] = serializer.data
-        #     return Response(data=data)
-        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(data=teacher_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(data=user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+   

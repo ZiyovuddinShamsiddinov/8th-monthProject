@@ -1,6 +1,8 @@
 from django.contrib import admin
 from .models import *
-from .models.model_group import GroupStudent
-from .models.model_teacher import Teacher, Course, Departments
+from .models.model_group import *
+from .models.model_student import *
+from .models.auth_user import *
+from .models.model_teacher import *
 
-admin.site.register([User,Teacher,Course,Departments,GroupStudent])
+admin.site.register([Rooms,TableType,Table,GroupStudent,Student,Parents,User,Course,Departments,Teacher,])
