@@ -1,3 +1,5 @@
+from django.contrib.admin.templatetags.admin_list import paginator_number, result_list
+from django.contrib.staticfiles.views import serve
 from django.core.cache import cache
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import password_changed
@@ -18,7 +20,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 import random
 from ..tokens.get_token import *
-
+from .add_pegination import *
 
 class LoginApi(APIView):
     permission_classes = [AllowAny]
@@ -99,5 +101,10 @@ class RegisterUserApi(APIView):
 
     def get(self, request):
         users = User.objects.all().order_by('-id')
-        serializer = UserSerializer(users, many=True)
-        return Response(data=serializer.data)
+        paginator=CustomPagination()
+        paginator.page_size=2
+        result_page=paginator.paginate_queryset(users , request)
+        serializer=UserSerializer(result_page,many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+

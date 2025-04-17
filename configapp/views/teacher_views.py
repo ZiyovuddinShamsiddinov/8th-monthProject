@@ -1,4 +1,6 @@
 from functools import cache
+
+from django.conf.global_settings import TEST_NON_SERIALIZED_APPS
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import password_changed
 from drf_yasg.utils import swagger_auto_schema
@@ -7,6 +9,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import get_user_model
+
+from .add_permission import *
 from ..models.model_student import *
 from ..models.model_group import *
 from ..models.model_teacher import *
@@ -18,42 +22,16 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 
 class TeacherApi(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [AllowAny,TeacherPermission,TeacherPatchAndGet]
 
     @swagger_auto_schema(responses={200: TeacherSerializer(many=True)})
     def get(self, request):
-        data = {'success': True}
         teacher = Teacher.objects.all()
-        serializer = TeacherSerializer(teacher, many=True)
-        data["teacher"] = serializer.data
-        return Response(data=data)
-
-    # @swagger_auto_schema(request_body=TeacherPostSerializer)
-    # def post(self, request):
-    #     data = {"success": True}
-    #     user = request.data["user"]
-    #     teacher = request.data["teacher"]
-    #     phone_number = user["phone_number"]
-    #     user_serialazer = UserSerializer(data=user)
-    #
-    #     if user_serialazer.is_valid(raise_exception=True):
-    #         user_serialazer.is_active = True
-    #         user_serialazer.is_teacher = True
-    #         user_serialazer.password = (
-    #             make_password(user_serialazer.validated_data.get("password"))
-    #         )
-    #         user = user_serialazer.save()
-    #
-    #         user_id = User.objects.filter(phone_number=phone_number).values('id')[0]['id']
-    #         teacher["user"] = user_id
-    #         teacher_serializer = TeacherSerializer(data=teacher)
-    #         if teacher_serializer.is_valid(raise_exception=True):
-    #             teacher_serializer.save()
-    #             data["user"] = user_serialazer.data
-    #             data["teacher"] = teacher_serializer.data
-    #             return Response(data=data)
-    #         return Response(data=teacher_serializer.errors)
-    #     return Response(data=user_serialazer.errors)
+        paginator = CustomPagination()
+        paginator.page_size = 2
+        result_page = paginator.paginate_queryset(teacher, request)
+        serializer = TeacherSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     @swagger_auto_schema(request_body=TeacherPostSerializer)
     def post(self, request):
@@ -79,4 +57,6 @@ class TeacherApi(APIView):
 
             return Response(data=teacher_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response(data=user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-   
+
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)

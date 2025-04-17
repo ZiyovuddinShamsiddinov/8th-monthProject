@@ -3,6 +3,7 @@ from django.urls import path
 from .views.login import *
 from .views.teacher_views import *
 from .views.student_views import *
+from .views.group_views import *
 
 
 
@@ -13,5 +14,6 @@ urlpatterns = [
     path('register/', RegisterUserApi.as_view()),
     path('teacher_add/',TeacherApi.as_view()),
     path('student_add/',StudentApi.as_view()),
+    path('group/api/',GroupApi.as_view()),
 
 ]

@@ -43,8 +43,8 @@ class StudentUserSerializer(serializers.ModelSerializer):
     is_student=serializers.BooleanField(read_only=True)
 
     class Meta:
-        model = User
-        fields = ('id','phone_number','password','email','is_active','is_teacher','is_staff','is_admin','is_student')
+        model = Student
+        fields = ('id', 'user', 'group','descriptions','is_active','is_teacher','is_staff','is_admin','is_student')
 
 
 class StudentPostSerializer(serializers.Serializer):

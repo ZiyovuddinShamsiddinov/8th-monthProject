@@ -21,11 +21,12 @@ class StudentApi(APIView):
 
     @swagger_auto_schema(responses={200: StudentSerializer(many=True)})
     def get(self, request):
-        data = {'success': True}
-        student = Teacher.objects.all()
-        serializer = StudentSerializer(student, many=True)
-        data["student"] = serializer.data
-        return Response(data=data)
+        student = Student.objects.all()
+        paginator = CustomPagination()
+        paginator.page_size = 2
+        result_page = paginator.paginate_queryset(student, request)
+        serializer = StudentSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     @swagger_auto_schema(request_body=StudentPostSerializer)
     def post(self, request):
