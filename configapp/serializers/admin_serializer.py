@@ -28,30 +28,6 @@ from rest_framework import serializers
 from configapp.models.auth_user import User
 from configapp.models.model_teacher import Teacher
 
-
-class StudentSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Student
-        fields = ['id', 'user', 'group',"descriptions"]
-
-class StudentUserSerializer(serializers.ModelSerializer):
-    is_active=serializers.BooleanField(read_only=True)
-    is_teacher=serializers.BooleanField(read_only=True)
-    is_staff=serializers.BooleanField(read_only=True)
-    is_admin=serializers.BooleanField(read_only=True)
-    is_student=serializers.BooleanField(read_only=True)
-
-    class Meta:
-        model = Student
-        fields = ('id', 'user', 'group','descriptions','is_active','is_teacher','is_staff','is_admin','is_student')
-
-
-class StudentPostSerializer(serializers.Serializer):
-    user=StudentUserSerializer()
-    student=StudentSerializer()
-
-class StudentPatchSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Teacher
-        fields = ['group',"descriptions"]
+class AdminSerializer(serializers.Serializer):
+    title=serializers.CharField(max_length=150)
+    is_admin =serializers.BooleanField(default=True)

@@ -108,3 +108,7 @@ class RegisterUserApi(APIView):
         return paginator.get_paginated_response(serializer.data)
 
 
+    def delete(self,request,pk):
+        user=self.get_object(pk)
+        user.delete()
+        return Response({"detail":"Delete success"},status=status.HTTP_204_NO_CONTENT)

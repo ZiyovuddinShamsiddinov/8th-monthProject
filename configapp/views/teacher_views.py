@@ -1,5 +1,5 @@
 from functools import cache
-
+from django.shortcuts import get_object_or_404
 from django.conf.global_settings import TEST_NON_SERIALIZED_APPS
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import password_changed
@@ -22,7 +22,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 
 class TeacherApi(APIView):
-    permission_classes = [AllowAny,TeacherPermission,TeacherPatchAndGet]
+    permission_classes = [AllowAny, TeacherPermission, TeacherPatchAndGet,AdminPermission]
 
     @swagger_auto_schema(responses={200: TeacherSerializer(many=True)})
     def get(self, request):
@@ -38,12 +38,12 @@ class TeacherApi(APIView):
         data = {"success": True}
         user = request.data.get("user")
         teacher = request.data.get("teacher")
-        #phone_number=user["phone_number]
+        # phone_number=user["phone_number]
         user_serializer = UserSerializer(data=user)
 
         if user_serializer.is_valid(raise_exception=True):
             user_serializer.validated_data['password'] = make_password(user_serializer.validated_data['password'])
-            user_serializer.validated_data['is_active'] = True #
+            user_serializer.validated_data['is_active'] = True  #
             user_serializer.validated_data['is_teacher'] = True
             user = user_serializer.save()
 
@@ -58,5 +58,19 @@ class TeacherApi(APIView):
             return Response(data=teacher_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response(data=user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def patch(self, request, *args, **kwargs):
-        return self.partial_update(request, *args, **kwargs)
+
+class TeacherUpdate(APIView):
+
+    def get_object(self, pk):
+        return get_object_or_404(Teacher, pk=pk)
+
+    @swagger_auto_schema(request_body=TeacherSerializer)
+    def put(self, request, pk):
+        teacher = self.get_object(pk)
+        serializer = TeacherSerializer(teacher, data=request.data, partial=True)
+        if serializer.is_valid(raise_exception=True):
+            password = serializer.validated_data.get('password')
+            serializer.validated_data['password'] = make_password(password)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

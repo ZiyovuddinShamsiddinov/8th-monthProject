@@ -32,3 +32,8 @@ class TeacherUserSerializer(serializers.ModelSerializer):
 class TeacherPostSerializer(serializers.Serializer):
     user=TeacherUserSerializer()
     teacher=TeacherSerializer()
+
+class TeacherPatchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Teacher
+        fields = ['departments', "course", "descriptions"]

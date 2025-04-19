@@ -1,4 +1,5 @@
 from functools import cache
+from django.shortcuts import get_object_or_404
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import password_changed
 from drf_yasg.utils import swagger_auto_schema
@@ -7,6 +8,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import get_user_model
+
+from .add_permission import AdminPermission
 from ..models.model_student import *
 from ..models.model_group import *
 from ..models.auth_user import *
@@ -17,7 +20,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 
 class StudentApi(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [AllowAny,AdminPermission]
 
     @swagger_auto_schema(responses={200: StudentSerializer(many=True)})
     def get(self, request):
@@ -51,3 +54,20 @@ class StudentApi(APIView):
 
             return Response(data=student_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response(data=user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class StudentUpdate(APIView):
+
+    def get_object(self, pk):
+        return get_object_or_404(Student, pk=pk)
+
+    @swagger_auto_schema(request_body=StudentSerializer)
+    def put(self, request, pk):
+        student = self.get_object(pk)
+        serializer = StudentSerializer(student, data=request.data, partial=True)
+        if serializer.is_valid(raise_exception=True):
+            password = serializer.validated_data.get('password')
+            serializer.validated_data['password'] = make_password(password)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
