@@ -1,5 +1,4 @@
 from turtledemo.clock import datum
-
 from django.contrib.admin.templatetags.admin_list import paginator_number, result_list
 from django.contrib.staticfiles.views import serve
 from django.core.cache import cache

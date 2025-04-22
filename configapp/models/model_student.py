@@ -3,6 +3,7 @@ from django.db import models
 from .auth_user import *
 
 class Student(BaseModel):
+    full_name = models.CharField(max_length=150, blank=True, null=True)
     user=models.OneToOneField(User,on_delete=models.CASCADE)
     group=models.ManyToManyField('GroupStudent',related_name='get_group')
     is_line=models.BooleanField(default=False)
