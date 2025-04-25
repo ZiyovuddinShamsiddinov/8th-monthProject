@@ -101,7 +101,7 @@ class RegisterUserApi(APIView):
 
     def get(self, request):
         users = User.objects.all().order_by('-id')
-        paginator=CustomPagination()
+        paginator=CostomPagination()
         paginator.page_size=2
         result_page=paginator.paginate_queryset(users , request)
         serializer=UserSerializer(result_page,many=True)

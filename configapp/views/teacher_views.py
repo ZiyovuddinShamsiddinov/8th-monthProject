@@ -9,7 +9,6 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import get_user_model
-
 from .add_permission import *
 from ..models.model_student import *
 from ..models.model_group import *
@@ -22,16 +21,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 
 class TeacherApi(APIView):
-    permission_classes = [AllowAny, TeacherPermission, TeacherPatchAndGet,AdminPermission]
-
-    @swagger_auto_schema(responses={200: TeacherSerializer(many=True)})
-    def get(self, request):
-        teacher = Teacher.objects.all()
-        paginator = CustomPagination()
-        paginator.page_size = 2
-        result_page = paginator.paginate_queryset(teacher, request)
-        serializer = TeacherSerializer(result_page, many=True)
-        return paginator.get_paginated_response(serializer.data)
+    permission_classes = [TeacherPermission, TeacherPatchAndGet,IsAdminPermission,IsStaffPermission]
 
     @swagger_auto_schema(request_body=TeacherPostSerializer)
     def post(self, request):
@@ -58,6 +48,14 @@ class TeacherApi(APIView):
             return Response(data=teacher_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response(data=user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @swagger_auto_schema(responses={200: TeacherSerializer(many=True)})
+    def get(self, request):
+        teacher = Teacher.objects.all()
+        paginator = CustomPagination()
+        paginator.page_size = 2
+        result_page = paginator.paginate_queryset(teacher, request)
+        serializer = TeacherSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 class TeacherUpdate(APIView):
 
@@ -74,3 +72,13 @@ class TeacherUpdate(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @swagger_auto_schema(request_body=TeacherSerializer)
+    def delete(self, request, pk):
+        try:
+            teacher = Teacher.objects.get(pk=pk)
+        except Teacher.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        teacher.delete()
+        return Response({'status': True, 'message': 'Teacher deleted successfully'})

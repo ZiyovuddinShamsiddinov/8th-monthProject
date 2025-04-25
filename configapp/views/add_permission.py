@@ -1,9 +1,9 @@
 from rest_framework.permissions import BasePermission
 
-class AdminPermission(BasePermission):
+
+class IsAdminPermission(BasePermission):
     def has_permission(self, request, view):
-        user = request.user
-        return request.user.is_admin
+        return request.user and request.user.is_authenticated and request.user.is_admin
 
 class TeacherPermission(BasePermission):
     def has_permission(self, request, view):
@@ -13,3 +13,7 @@ class TeacherPermission(BasePermission):
 class TeacherPatchAndGet(BasePermission):
     def has_permission(self, request, view):
         return request.method in ["PUT","DELETE"]
+
+class IsStaffPermission(BasePermission):
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated and request.user.is_staff

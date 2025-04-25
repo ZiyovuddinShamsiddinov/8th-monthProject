@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import get_user_model
 
-from .add_permission import AdminPermission
+from .add_permission import *
 from ..models.model_student import *
 from ..models.model_group import *
 from ..models.auth_user import *
@@ -20,16 +20,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 
 class StudentApi(APIView):
-    permission_classes = [AllowAny,AdminPermission]
-
-    @swagger_auto_schema(responses={200: StudentSerializer(many=True)})
-    def get(self, request):
-        student = Student.objects.all()
-        paginator = CustomPagination()
-        paginator.page_size = 2
-        result_page = paginator.paginate_queryset(student, request)
-        serializer = StudentSerializer(result_page, many=True)
-        return paginator.get_paginated_response(serializer.data)
+    permission_classes = [AllowAny,IsAdminPermission,IsStaffPermission]
 
     @swagger_auto_schema(request_body=StudentPostSerializer)
     def post(self, request):
@@ -55,6 +46,15 @@ class StudentApi(APIView):
             return Response(data=student_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response(data=user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @swagger_auto_schema(responses={200: StudentSerializer(many=True)})
+    def get(self, request):
+        student = Student.objects.all()
+        paginator = CustomPagination()
+        paginator.page_size = 2
+        result_page = paginator.paginate_queryset(student, request)
+        serializer = StudentSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
 
 class StudentUpdate(APIView):
 
@@ -71,3 +71,13 @@ class StudentUpdate(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @swagger_auto_schema(request_body=StudentSerializer)
+    def delete(self, request, pk):
+        try:
+            student = Student.objects.get(pk=pk)
+        except Student.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        student.delete()
+        return Response({'status': True, 'message': 'Student deleted successfully'})
