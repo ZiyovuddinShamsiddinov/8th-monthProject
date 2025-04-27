@@ -59,6 +59,8 @@ class GroupAttendanceApi(APIView):
         """
         GET so'rovi: guruh va sana bo'yicha yo'qlama ro'yxatini olish.
         """
+        teacher = Teacher.objects.get(user=user)
+        groups = GroupStudent.objects.filter(teacher=teacher)
         date = request.GET.get('date')
         if not date:
             return Response({"error": "date parametri kerak!"}, status=status.HTTP_400_BAD_REQUEST)
@@ -68,7 +70,7 @@ class GroupAttendanceApi(APIView):
         except Group.DoesNotExist:
             return Response({"error": "Group topilmadi"}, status=status.HTTP_404_NOT_FOUND)
 
-        students = Student.objects.filter(group=group)
+        students = Student.objects.filter(group__in=groups).distinct()
 
         # Kelmaganlarni olish
         absent_students = request.GET.getlist('absent_students[]', [])
