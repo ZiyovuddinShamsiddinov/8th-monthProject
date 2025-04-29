@@ -21,7 +21,7 @@ class Table(BaseModel):
 class GroupStudent(BaseModel):
     title=models.CharField(max_length=150)
     course=models.ForeignKey(Course,on_delete=models.RESTRICT)
-    teacher=models.ManyToManyField(Teacher)
+    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     table=models.ManyToManyField(Table)
     start_date=models.DateField()
     end_date=models.DateField()

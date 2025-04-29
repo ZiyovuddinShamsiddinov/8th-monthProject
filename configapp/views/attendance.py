@@ -6,69 +6,61 @@ from configapp.models.model_student import Student
 from configapp.models.model_group import *
 from configapp.models.model_attendance import Attendance
 from ..serializers.attendance_serializer import AttendanceSerializer
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 
+class GroupStudentAttendanceApi(APIView):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticated]
 
-class GroupAttendanceApi(APIView):
     @swagger_auto_schema(request_body=AttendanceSerializer)
     def post(self, request):
-        """
-        POST so'rovi: kelmagan studentlarni ko'rsatish va kelganlarni `status=True` qilib yozish.
-        """
         serializer = AttendanceSerializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            group_id = serializer.validated_data['group_id']
-            date = serializer.validated_data['date']
-            absent_students = serializer.validated_data.get('absent_students', [])
+        serializer.is_valid(raise_exception=True)
 
-            try:
-                group = Group.objects.get(pk=group_id)
-            except Group.DoesNotExist:
-                return Response({"error": "Group topilmadi"}, status=status.HTTP_404_NOT_FOUND)
+        group = serializer.validated_data['group']  # <- bu obyekt!
+        date = serializer.validated_data['date']
+        absent_students = serializer.validated_data.get('absent_students', [])
 
-            students = Student.objects.filter(group=group)
+        teacher = group.teacher
 
-            # Kelmaganlarni olish
-            absent_students_query = students.filter(id__in=absent_students)
-            absent_ids = absent_students_query.values_list('id', flat=True)
+        students = Student.objects.filter(group=group)
+        absent_ids = set(absent_students)
 
-            # Kelganlarni topish
-            present_students_query = students.exclude(id__in=absent_ids)
+        attendances = [
+            Attendance(
+                student=student,
+                group=group,
+                teacher=teacher,
+                date=date,
+                status=(student.id not in absent_ids)
+            )
+            for student in students
+        ]
+        Attendance.objects.bulk_create(attendances)
 
-            # Attendance yaratish
-            attendances = []
-            for student in students:
-                status_value = student.id not in absent_ids
-                attendances.append(Attendance(
-                    student=student,
-                    date=date,
-                    status=status_value
-                ))
-
-            # Bulk create attendance records
-            Attendance.objects.bulk_create(attendances)
-
-            return Response({
-                "success": True,
-                "message": f"{students.count()} ta student uchun yo‘qlama yozildi",
-                "present_count": present_students_query.count(),
-                "absent_count": absent_students_query.count()
-            }, status=status.HTTP_201_CREATED)
+        return Response({
+            "success": True,
+            "message": f"{students.count()} ta student uchun yo‘qlama yozildi",
+            "present_count": students.count() - len(absent_ids),
+            "absent_count": len(absent_ids)
+        }, status=status.HTTP_201_CREATED)
 
     @swagger_auto_schema(responses={200: AttendanceSerializer(many=True)})
-    def get(self, request, group_id):
+    def get(self, request):
         """
         GET so'rovi: guruh va sana bo'yicha yo'qlama ro'yxatini olish.
         """
-        teacher = Teacher.objects.get(user=user)
-        groups = GroupStudent.objects.filter(teacher=teacher)
+        teacher = Teacher.objects.get(user=request.user)
+        group = GroupStudent.objects.filter(teacher=teacher)
         date = request.GET.get('date')
         if not date:
             return Response({"error": "date parametri kerak!"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            group = Group.objects.get(pk=group_id)
-        except Group.DoesNotExist:
-            return Response({"error": "Group topilmadi"}, status=status.HTTP_404_NOT_FOUND)
+            group = GroupStudent.objects.get(pk=group)
+        except GroupStudent.DoesNotExist:
+            return Response({"error": "GroupStudent topilmadi"}, status=status.HTTP_404_NOT_FOUND)
 
         students = Student.objects.filter(group__in=groups).distinct()
 

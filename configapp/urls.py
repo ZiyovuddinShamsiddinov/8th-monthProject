@@ -1,6 +1,5 @@
 from msilib.schema import Registry
 from django.urls import path
-
 from .views.attendance import *
 from .views.login import *
 from .views.teacher_views import *
@@ -19,7 +18,8 @@ urlpatterns = [
     path('student_api/', StudentApi.as_view()),
     path('student_update/', StudentUpdate.as_view()),
     path('group/api/', GroupApi.as_view()),
-    path('attendance/', GroupAttendanceApi.as_view()),
+    path('attendance/', GroupStudentAttendanceApi.as_view()),
+    path('attendance/<int:group_id>/', GroupStudentAttendanceApi.as_view()),
     path('admin/crud/', UserManagementApi.as_view()),
     path('admin/crud/<int:pk>/', UserManagementApi.as_view()),
     path('payments/', PaymentListCreateView.as_view(), name='payment-list-create'),

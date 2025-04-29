@@ -1,9 +1,8 @@
 from rest_framework.permissions import BasePermission
 
-
 class IsAdminPermission(BasePermission):
     def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and request.user.is_admin
+        return request.user  and request.user.is_admin   #and request.user.is_authenticated
 
 class TeacherPermission(BasePermission):
     def has_permission(self, request, view):

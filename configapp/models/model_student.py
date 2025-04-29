@@ -8,6 +8,9 @@ class Student(BaseModel):
     group=models.ManyToManyField('GroupStudent',related_name='get_group')
     is_line=models.BooleanField(default=False)
     descriptions=models.CharField(max_length=500,blank=True,null=True)
+    def __str__(self):
+        return self.full_name
+
 
 class Parents(BaseModel):
     student=models.ManyToManyField(Student,related_name='student')
