@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from .add_permission import IsAdminPermission
 from ..serializers.admin_serializer import AdminSerializer
 from ..serializers.login_serializers import UserSerializer
+from .add_pegination import *  # <-- импортируем пагинацию
 
 User = get_user_model()
 
@@ -22,9 +23,10 @@ class UserManagementApi(APIView):
     @swagger_auto_schema(responses={200: UserSerializer(many=True)})
     def get(self, request):
         users = User.objects.all()
-        serializer = AdminSerializer(users, many=True)
-        return Response(serializer.data)
-
+        paginator = CustomPagination()  # <-- подключаем paginator
+        result_page = paginator.paginate_queryset(users, request)
+        serializer = AdminSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     @swagger_auto_schema(request_body=UserSerializer)
     def put(self, request, pk):

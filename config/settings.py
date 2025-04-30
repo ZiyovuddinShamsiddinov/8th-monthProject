@@ -11,7 +11,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 
+from django.conf.global_settings import STATICFILES_DIRS, STATIC_ROOT
 from drf_yasg.app_settings import SWAGGER_DEFAULTS
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -26,7 +28,7 @@ SECRET_KEY = 'django-insecure-y7#4-h4l*94)l^n%c7pom=_-(!e5oeaik2!4a8pa7+p0!#fcb=
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*','207.154.205.16']
 
 # Application definition
 
@@ -41,35 +43,35 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'drf_yasg',
+    'corsheaders',
 ]
 
 REST_FRAMEWORK = {
-
-        'DEFAULT_PERMISSION_CLASSES': [
+    'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': (
-    'rest_framework_simplejwt.authentication.JWTAuthentication',
-),
-
-
-    'DEFAULT_PAGINATION_CLASS':'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE' :2,
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # Используем JWT аутентификацию
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 2,
 }
 
-SWAGGER_SETTINGS= {
-    'SECURITY_DEFINITIONS':{
-      'Bearer':{
-          'type':'apiKey',
-          'name':'Authorization',
-          'in':'header',
-          'description':'JWT tokeni quyidagicha kiriting : Bearer <your_token>'
-      }
+SWAGGER_SETTINGS = {
+    'USE_SESSION_AUTH': False,
+    'JSON_EDITOR': True,
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
     },
-    'USE_SESSION_AUTH':False,#bu juda muhim
 }
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -137,14 +139,37 @@ USE_I18N = True
 
 USE_TZ = True
 
+CORS_ALLOW_ALL_ORIGINS = True
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 # settings.py
 AUTH_USER_MODEL = 'configapp.User'
 
 STATIC_URL = 'static/'
+import os
 
+#static fayllar yig'ish papkasi
+
+STATICFILES_DIRS=[
+    os.path.join(BASE_DIR,'config/static/')
+]
+STATIC_ROOT=os.path.join(BASE_DIR,'static/')
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# JWT настройки
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),  # Время жизни access token
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),  # Время жизни refresh token
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}

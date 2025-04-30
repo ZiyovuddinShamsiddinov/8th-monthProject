@@ -1,33 +1,13 @@
-from turtledemo.clock import datum
-from django.contrib.admin.templatetags.admin_list import paginator_number, result_list
-from django.contrib.staticfiles.views import serve
-from django.core.cache import cache
-from django.contrib.auth.hashers import make_password
-from django.contrib.auth.password_validation import password_changed
-from django.db.models.fields import return_None
-from drf_yasg.utils import swagger_auto_schema
+from rest_framework.pagination import PageNumberPagination
+from .add_pegination import CustomPagination  # Импортируй твою пагинацию
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from rest_framework import status
-from django.contrib.auth import get_user_model
-# from tutorial.quickstart.serializers import UserSerializer
-from ..models.model_group import *
-from ..models.model_student import *
-from ..models.model_teacher import *
-from ..models.auth_user import *
-from ..serializers.group_serializer import GroupSerializer
-from ..serializers.login_serializers import *
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
-import random
-from ..tokens.get_token import *
-from .add_pegination import *
+from drf_yasg.utils import swagger_auto_schema
+from ..serializers.group_serializer import *
 
 class GroupApi(APIView):
     @swagger_auto_schema(request_body=GroupSerializer)
-    def post(self,request):
-        serializer=GroupSerializer(data=request.data)
+    def post(self, request):
+        serializer = GroupSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             return Response({
@@ -38,7 +18,43 @@ class GroupApi(APIView):
     @swagger_auto_schema(responses={200: GroupSerializer(many=True)})
     def get(self, request):
         data = {"success": True}
+
+        # Применяем пагинацию
         group = GroupStudent.objects.all()
-        serializer = GroupSerializer(group, many=True)
-        data["group"] = serializer.data
-        return Response(data=data)
+        paginator = CustomPagination()
+        result_page = paginator.paginate_queryset(group, request)
+
+        # Возвращаем ответ с пагинированными данными
+        return paginator.get_paginated_response(GroupSerializer(result_page, many=True).data)
+
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from ..models.model_student import Student
+from ..models.model_teacher import Teacher
+from ..serializers.student_serializer import StudentSerializer
+from .add_pegination import CustomPagination
+
+class MyStudentsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            teacher = Teacher.objects.get(user=request.user)
+        except Teacher.DoesNotExist:
+            return Response({"error": "siz o'qituvchi emassiz"}, status=status.HTTP_403_FORBIDDEN)
+
+        # Получаем группы этого преподавателя
+        groups = Group.objects.filter(teacher=teacher)
+
+        if not groups.exists():
+            return Response({"error": "sizda gruppa yo'q"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Получаем всех студентов, состоящих в этих группах
+        students = Student.objects.filter(group__in=groups).distinct()
+
+        paginator = CustomPagination()
+        result_page = paginator.paginate_queryset(students, request)
+        serializer = StudentSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)

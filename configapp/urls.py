@@ -15,6 +15,7 @@ urlpatterns = [
     path('register/', RegisterUserApi.as_view()),
     path('teacher_api/', TeacherApi.as_view()),
     path('teacher_update/', TeacherUpdate.as_view()),
+    path('my_students/', MyStudentsView.as_view(), name='my-students'),
     path('student_api/', StudentApi.as_view()),
     path('student_update/', StudentUpdate.as_view()),
     path('group/api/', GroupApi.as_view()),

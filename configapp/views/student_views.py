@@ -17,43 +17,54 @@ from ..serializers.login_serializers import *
 from ..serializers.student_serializer import *
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
+from .add_pegination import CustomPagination  # Импорт пагинации
 
 
 class StudentApi(APIView):
-    permission_classes = [AllowAny,IsAdminPermission,IsStaffPermission]
+    permission_classes = [AllowAny]
 
     @swagger_auto_schema(request_body=StudentPostSerializer)
     def post(self, request):
         data = {"success": True}
-        user = request.data.get("user")
-        student = request.data.get("student")
-        user_serializer = UserSerializer(data=user)
+        user_data = request.data.get("user")
+        student_data = request.data.get("student")
 
+        # Проверка на существование пользователя
+        if User.objects.filter(phone_number=user_data['phone_number']).exists():
+            return Response({'error': 'User with this phone number already exists.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Создаем пользователя
+        user_serializer = UserSerializer(data=user_data)
         if user_serializer.is_valid(raise_exception=True):
             user_serializer.validated_data['password'] = make_password(user_serializer.validated_data['password'])
-            user_serializer.validated_data['is_active'] = True  #
+            user_serializer.validated_data['is_active'] = True
             user_serializer.validated_data['is_student'] = True
             user = user_serializer.save()
 
-            student["user"] = user.id
-            student_serializer = StudentSerializer(data=student)
+            # Проверяем группу
+            group = student_data.get('group')
+            if not GroupStudent.objects.filter(id=group).exists():
+                return Response({'error': 'Group not found.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Создаем студента
+            student_serializer = StudentSerializer(data=student_data)
             if student_serializer.is_valid(raise_exception=True):
-                student_serializer.save()
+                student_serializer.save(user=user)  # Вот здесь привязываем пользователя
                 data["user"] = user_serializer.data
                 data["student"] = student_serializer.data
                 return Response(data=data, status=status.HTTP_201_CREATED)
 
-            return Response(data=student_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        return Response(data=user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Invalid data'}, status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(responses={200: StudentSerializer(many=True)})
     def get(self, request):
-        student = Student.objects.all()
-        paginator = CustomPagination()
-        paginator.page_size = 2
-        result_page = paginator.paginate_queryset(student, request)
-        serializer = StudentSerializer(result_page, many=True)
-        return paginator.get_paginated_response(serializer.data)
+        students = Student.objects.all()
+        paginator = CustomPagination()  # Создаем объект пагинации
+        paginator.page_size = 2  # Задаем количество элементов на странице
+        result_page = paginator.paginate_queryset(students, request)  # Применяем пагинацию
+        serializer = StudentSerializer(result_page, many=True)  # Сериализуем пагинированные данные
+        return paginator.get_paginated_response(serializer.data)  # Возвращаем пагинированный ответ
 
 
 class StudentUpdate(APIView):

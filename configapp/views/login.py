@@ -85,30 +85,32 @@ class VerifySMS(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class RegisterUserApi(APIView):
+    permission_classes = [AllowAny]  # Открыть для всех
+
     @swagger_auto_schema(request_body=UserSerializer)
-    def post(self, requset):
-        serializer = UserSerializer(data=requset.data)
+    def post(self, request):
+        serializer = UserSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             password = serializer.validated_data.get('password')
+            # Хеширование пароля
             serializer.validated_data['password'] = make_password(password)
-            serializer.save()
+            user = serializer.save()  # Сохраняем пользователя
             return Response({
                 'status': True,
-                'details': 'Account create'
-            })
+                'details': 'Account created successfully'
+            }, status=status.HTTP_201_CREATED)
 
+    @swagger_auto_schema(responses={200: UserSerializer(many=True)})
     def get(self, request):
         users = User.objects.all().order_by('-id')
-        paginator=CostomPagination()
-        paginator.page_size=2
-        result_page=paginator.paginate_queryset(users , request)
-        serializer=UserSerializer(result_page,many=True)
+        paginator = CustomPagination()
+        paginator.page_size = 2
+        result_page = paginator.paginate_queryset(users, request)
+        serializer = UserSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
 
-
-    def delete(self,request,pk):
-        user=self.get_object(pk)
+    def delete(self, request, pk):
+        user = self.get_object(pk)
         user.delete()
-        return Response({"detail":"Delete success"},status=status.HTTP_204_NO_CONTENT)
+        return Response({"detail": "Delete success"}, status=status.HTTP_204_NO_CONTENT)

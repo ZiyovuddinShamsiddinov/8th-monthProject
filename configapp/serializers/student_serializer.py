@@ -30,10 +30,9 @@ from configapp.models.model_teacher import Teacher
 
 
 class StudentSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Student
-        fields = ['id', 'user', 'group',"descriptions"]
+        fields = ['id', 'group', 'descriptions']
 
 class StudentUserSerializer(serializers.ModelSerializer):
     is_active=serializers.BooleanField(read_only=True)
@@ -43,15 +42,45 @@ class StudentUserSerializer(serializers.ModelSerializer):
     is_student=serializers.BooleanField(read_only=True)
 
     class Meta:
-        model = Student
-        fields = ('id', 'user', 'group','descriptions','is_active','is_teacher','is_staff','is_admin','is_student')
+        model = User
+        fields = (
+        'id', 'phone_number', 'password', 'email', 'is_active', 'is_teacher', 'is_staff', 'is_admin', 'is_student')
 
 
 class StudentPostSerializer(serializers.Serializer):
-    user=StudentUserSerializer()
-    student=StudentSerializer()
+    user = UserSerializer()  # Сериализуем объект User
+    student = StudentSerializer()
+
+    def create(self, validated_data):
+        user_data = validated_data.pop('user')  # Извлекаем данные для user
+        student_data = validated_data.pop('student')  # Извлекаем данные для student
+
+        # Создаем User
+        user = User.objects.create(
+            phone_number=user_data['phone_number'],
+            email=user_data.get('email', ''),
+            password=make_password(user_data['password']),
+            is_active=True,
+            is_student=True
+        )
+
+        # Создаем Student и связываем его с только что созданным пользователем
+        student = Student.objects.create(
+            user=user,  # Передаем объект user, а не его ID
+            descriptions=student_data.get('descriptions', '')
+        )
+
+        # Привязываем ManyToMany поля, если они есть
+        student.departments.set(student_data.get('departments', []))
+        student.course.set(student_data.get('course', []))
+        student.save()
+
+        return student
+
+
+
 
 class StudentPatchSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Teacher
-        fields = ['group',"descriptions"]
+        model = Student  # Это должно быть Student, а не Teacher
+        fields = ['group', 'descriptions']  # Обновление группы и описания студента

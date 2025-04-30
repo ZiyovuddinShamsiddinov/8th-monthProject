@@ -3,11 +3,12 @@ from rest_framework.response import Response
 from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
 from configapp.models.model_student import Student
-from configapp.models.model_group import *
-from configapp.models.model_attendance import Attendance
+from configapp.models.model_group import GroupStudent
+from configapp.models.model_attendance import Attendance, Teacher
 from ..serializers.attendance_serializer import AttendanceSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from .add_pegination import CustomPagination  # <-- Пагинатор импорт
 
 class GroupStudentAttendanceApi(APIView):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
@@ -18,12 +19,11 @@ class GroupStudentAttendanceApi(APIView):
         serializer = AttendanceSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        group = serializer.validated_data['group']  # <- bu obyekt!
+        group = serializer.validated_data['group']
         date = serializer.validated_data['date']
         absent_students = serializer.validated_data.get('absent_students', [])
 
         teacher = group.teacher
-
         students = Student.objects.filter(group=group)
         absent_ids = set(absent_students)
 
@@ -49,37 +49,21 @@ class GroupStudentAttendanceApi(APIView):
     @swagger_auto_schema(responses={200: AttendanceSerializer(many=True)})
     def get(self, request):
         """
-        GET so'rovi: guruh va sana bo'yicha yo'qlama ro'yxatini olish.
+        GET: Guruh va sana bo'yicha yo'qlama ro'yxatini olish (paginatsiya bilan)
         """
-        teacher = Teacher.objects.get(user=request.user)
-        group = GroupStudent.objects.filter(teacher=teacher)
+        try:
+            teacher = Teacher.objects.get(user=request.user)
+        except Teacher.DoesNotExist:
+            return Response({"error": "Siz teacher emassiz!"}, status=status.HTTP_400_BAD_REQUEST)
+
         date = request.GET.get('date')
         if not date:
             return Response({"error": "date parametri kerak!"}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            group = GroupStudent.objects.get(pk=group)
-        except GroupStudent.DoesNotExist:
-            return Response({"error": "GroupStudent topilmadi"}, status=status.HTTP_404_NOT_FOUND)
+        attendances = Attendance.objects.filter(group__teacher=teacher, date=date).select_related('student', 'group')
 
-        students = Student.objects.filter(group__in=groups).distinct()
+        paginator = CustomPagination()
+        result_page = paginator.paginate_queryset(attendances, request)
+        serializer = AttendanceSerializer(result_page, many=True)
 
-        # Kelmaganlarni olish
-        absent_students = request.GET.getlist('absent_students[]', [])
-        absent_students = list(map(int, absent_students))  # JSON'dan kelgan ro'yxatni integer ga aylantirish
-
-        absent_students_query = students.filter(id__in=absent_students)
-        absent_data = [{"id": s.id, "full_name": s.full_name} for s in absent_students_query]
-
-        # Kelganlarni topish
-        present_students_query = students.exclude(id__in=absent_students)
-        present_data = [{"id": s.id, "full_name": s.full_name} for s in present_students_query]
-
-        return Response({
-            "date": date,
-            "group": group.name,
-            "present_count": len(present_students_query),
-            "absent_count": len(absent_students_query),
-            "present_students": present_data,
-            "absent_students": absent_data
-        }, status=status.HTTP_200_OK)
+        return paginator.get_paginated_response(serializer.data)

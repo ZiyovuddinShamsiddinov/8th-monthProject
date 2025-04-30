@@ -11,7 +11,7 @@ from configapp.models.model_teacher import Teacher
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id','phone_number','password','email','is_active','is_teacher','is_staff','is_admin','is_student')
+        fields = ('id','phone_number','password','email','is_active','is_staff','is_admin','is_teacher','is_student')
 
 
 class DepartmentSerializer(serializers.ModelSerializer):

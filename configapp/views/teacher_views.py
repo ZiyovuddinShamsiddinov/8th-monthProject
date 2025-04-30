@@ -19,42 +19,8 @@ from ..serializers.login_serializers import *
 from ..serializers.teacher_serializer import *
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
+from .add_pegination import CustomPagination  # Импорт пагинации
 
-
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.views import APIView
-from django.contrib.auth.hashers import make_password
-from ..models.model_teacher import Teacher
-from ..serializers.teacher_serializer import TeacherPostSerializer, TeacherSerializer
-from ..serializers.login_serializers import UserSerializer
-
-from rest_framework.response import Response
-from rest_framework import status
-from django.contrib.auth.hashers import make_password
-from ..serializers.login_serializers import *
-from ..serializers.teacher_serializer import *
-from rest_framework.permissions import IsAuthenticated
-
-from django.contrib.auth.hashers import make_password
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.views import APIView
-from ..serializers.login_serializers import *
-from ..serializers.teacher_serializer import *
-from ..models.auth_user import *
-from ..models.model_teacher import *
-
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from drf_yasg.utils import swagger_auto_schema
-from rest_framework.permissions import AllowAny
-from ..serializers.teacher_serializer import TeacherPostSerializer
-from ..models.model_teacher import Teacher
-from .add_pegination import *
 
 class TeacherApi(APIView):
     permission_classes = [AllowAny,]
@@ -97,10 +63,10 @@ class TeacherApi(APIView):
     @swagger_auto_schema(responses={200: TeacherPostSerializer(many=True)})
     def get(self, request):
         teacher = Teacher.objects.all()
-        paginator = CustomPagination()
-        result_page = paginator.paginate_queryset(teacher, request)
-        serializer = TeacherPostSerializer(result_page, many=True)
-        return paginator.get_paginated_response(serializer.data)
+        paginator = CustomPagination()  # Создаем объект пагинации
+        result_page = paginator.paginate_queryset(teacher, request)  # Применяем пагинацию
+        serializer = TeacherPostSerializer(result_page, many=True)  # Сериализуем пагинированные данные
+        return paginator.get_paginated_response(serializer.data)  # Возвращаем пагинированный ответ
 
 
 class TeacherUpdate(APIView):
