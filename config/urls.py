@@ -23,10 +23,19 @@ schema_view = get_schema_view(
     public=True,
     permission_classes=([permissions.AllowAny, ]),
 )
+from django.urls import path
+from configapp.views.add_permission import MyAdminSite
+from django.contrib.auth import get_user_model
+
+admin_site = MyAdminSite(name='myadmin')
+
+# Зарегистрировать модели
+from configapp.models import *
+admin_site.register([Rooms,TableType,Table,GroupStudent,Student,Parents,User,Course,Departments,Teacher,Attendance,Lesson])
 
 urlpatterns = [
     path('api/', include("configapp.urls")),
-    path('admin/', admin.site.urls),
+    path('admin/', admin_site.urls),
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('swagger.<format>/', schema_view.without_ui(cache_timeout=0), name='schema-json'),

@@ -1,4 +1,3 @@
-from msilib.schema import Registry
 from django.urls import path
 from .views.attendance import *
 from .views.login import *

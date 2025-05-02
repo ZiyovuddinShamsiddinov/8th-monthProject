@@ -25,8 +25,8 @@ After=network.target
 [Service]
 User=root
 Group=www-data
-WorkingDirectory=/var/www1/n59_deploy
-ExecStart=/var/www1/n59_deploy/venv/bin/gunicorn \
+WorkingDirectory=/var/www1/8th-monthProject
+ExecStart=/var/www1/8th-monthProject/venv/bin/gunicorn \
           --access-logfile - \
           --workers 3 \
           --bind unix:/run/gunicorn.sock \
@@ -42,11 +42,11 @@ WantedBy=multi-user.target
 
 server {
     listen 80;
-    server_name 104.248.33.215;
+    server_name 207.154.205.16;
 
     location = /favicon.ico { access_log off; log_not_found off; }
     location /static/ {
-       root /var/www1/n59_deploy;
+       root /var/www1/8th-monthProject;
     }
 
     location / {
