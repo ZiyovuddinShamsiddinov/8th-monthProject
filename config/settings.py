@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-y7#4-h4l*94)l^n%c7pom=_-(!e5oeaik2!4a8pa7+p0!#fcb=
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*','207.154.205.16']
+ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1', 'localhost', '207.154.205.16']
 
 # Application definition
 
@@ -162,10 +162,14 @@ import os
 
 #static fayllar yig'ish papkasi
 
-STATICFILES_DIRS=[
-    os.path.join(BASE_DIR,'config/static/')
+# Убедитесь, что STATICFILES_DIRS указывает только на дополнительные папки для статических файлов
+STATICFILES_DIRS = [
+    BASE_DIR / "static",  # Папка для статических файлов в вашем проекте
 ]
-STATIC_ROOT=os.path.join(BASE_DIR,'static/')
+
+# Укажите отдельную папку для сбора статических файлов (например, "static_collected")
+STATIC_ROOT = BASE_DIR / "static_collected"  # Папка, в которую будут собираться все статики
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 MEDIA_URL = '/media/'

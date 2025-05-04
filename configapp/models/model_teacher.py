@@ -22,12 +22,10 @@ class Departments(BaseModel):
     def __str__(self):
         return self.title
 
-
-# Xodimlarning datalarini saqlash uchun yuqoridagi Course va Departments modellari Worker bog'langan
 class Teacher(BaseModel):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="teacher_profile")
-    departments = models.ManyToManyField(Departments, related_name='teachers')
-    course = models.ManyToManyField(Course, related_name='teachers')
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    departments = models.ManyToManyField(Departments)
+    course = models.ManyToManyField(Course)
     descriptions = models.CharField(max_length=500, blank=True, null=True)
 
     def __str__(self):

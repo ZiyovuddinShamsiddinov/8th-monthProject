@@ -1,96 +1,70 @@
-from rest_framework.permissions import IsAuthenticated  # Добавляем импорт
-from functools import cache
-from django.shortcuts import get_object_or_404
-from django.conf.global_settings import TEST_NON_SERIALIZED_APPS
-from django.contrib.auth.hashers import make_password
-from django.contrib.auth.password_validation import password_changed
-from drf_yasg.utils import swagger_auto_schema
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from django.contrib.auth import get_user_model
-from .add_permission import *
-from ..models.model_student import *
-from ..models.model_group import *
-from ..models.model_teacher import *
-from ..models.auth_user import *
-from ..serializers.login_serializers import *
-from ..serializers.teacher_serializer import *
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
-from .add_pegination import CustomPagination  # Импорт пагинации
+from django.shortcuts import get_object_or_404
+from drf_yasg.utils import swagger_auto_schema
+from configapp.models.model_teacher import Teacher
+from configapp.views.add_permission import *
+from configapp.serializers.teacher_serializer import *
+from configapp.views.add_pegination import *
 
 
 class TeacherApi(APIView):
-    permission_classes = [AllowAny,]
+    permission_classes = [IsAdminPermission, IsStaffPermission]
 
-    @swagger_auto_schema(request_body=TeacherPostSerializer)
+    @swagger_auto_schema(request_body=TeacherSerializer)
     def post(self, request):
-        data = {"success": True}
-
-        # Validatsiya qilish
-        serializer = TeacherPostSerializer(data=request.data)
+        serializer = TeacherSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        teacher = serializer.save()
+        return Response(TeacherSerializer(teacher).data, status=status.HTTP_201_CREATED)
 
-        user_data = serializer.validated_data.get('user')
-        teacher_data = serializer.validated_data.get('teacher')
-
-        # Parolni hash qilish
-        user_data['password'] = make_password(user_data['password'])
-        user_data['is_active'] = True
-        user_data['is_teacher'] = True
-
-        # User yaratish
-        user = User.objects.create(**user_data)
-
-        # ManyToMany fieldlarni ajratib olish
-        departments = teacher_data.pop('departments', [])
-        courses = teacher_data.pop('course', [])
-
-        # Teacher yaratish
-        teacher = Teacher.objects.create(user=user, **teacher_data)
-
-        # ManyToMany fieldlarni set qilish
-        teacher.departments.set(departments)
-        teacher.course.set(courses)
-
-        data["user"] = UserSerializer(user).data
-        data["teacher"] = TeacherSerializer(teacher).data
-
-        return Response(data, status=status.HTTP_201_CREATED)
-
-    @swagger_auto_schema(responses={200: TeacherPostSerializer(many=True)})
+    @swagger_auto_schema(responses={200: TeacherSerializer(many=True)})
     def get(self, request):
-        teacher = Teacher.objects.all()
-        paginator = CustomPagination()  # Создаем объект пагинации
-        result_page = paginator.paginate_queryset(teacher, request)  # Применяем пагинацию
-        serializer = TeacherPostSerializer(result_page, many=True)  # Сериализуем пагинированные данные
-        return paginator.get_paginated_response(serializer.data)  # Возвращаем пагинированный ответ
+        teachers = Teacher.objects.all()
+        paginator = CustomPagination()
+        result_page = paginator.paginate_queryset(teachers, request)
+        serializer = TeacherSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
-class TeacherUpdate(APIView):
+class TeacherUpdateApi(APIView):
+    permission_classes = [IsAdminPermission, IsStaffPermission]
 
-    def get_object(self, pk):
-        return get_object_or_404(Teacher, pk=pk)
+    def get_object(self, phone_number):
+        return get_object_or_404(Teacher, user__phone_number=phone_number)
 
-    @swagger_auto_schema(request_body=TeacherSerializer)
-    def put(self, request, pk):
-        teacher = self.get_object(pk)
-        serializer = TeacherSerializer(teacher, data=request.data, partial=True)
-        if serializer.is_valid(raise_exception=True):
-            password = serializer.validated_data.get('password')
-            serializer.validated_data['password'] = make_password(password)
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    @swagger_auto_schema(request_body=TeacherFullUpdateSerializer)
+    def put(self, request, phone_number):
+        teacher = self.get_object(phone_number)
+        serializer = TeacherFullUpdateSerializer(teacher, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        teacher_data = serializer.validated_data
 
-    @swagger_auto_schema(request_body=TeacherSerializer)
-    def delete(self, request, pk):
-        try:
-            teacher = Teacher.objects.get(pk=pk)
-        except Teacher.DoesNotExist:
-            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        # Обновляем user'а
+        user_data = teacher_data.pop('user', None)
+        if user_data:
+            user = teacher.user
+            for attr, value in user_data.items():
+                setattr(user, attr, value)
+            user.save()
 
+        # Обновляем ManyToMany поля
+        if 'departments' in teacher_data:
+            teacher.departments.set(teacher_data.pop('departments'))
+        if 'course' in teacher_data:
+            teacher.course.set(teacher_data.pop('course'))
+
+        # Остальные поля
+        for attr, value in teacher_data.items():
+            setattr(teacher, attr, value)
+
+        teacher.save()
+
+        return Response(TeacherSerializer(teacher).data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(request_body=TeacherUserUpdateSerializer)
+    def delete(self, request, phone_number):
+        teacher = self.get_object(phone_number)
         teacher.delete()
         return Response({'status': True, 'message': 'Teacher deleted successfully'})

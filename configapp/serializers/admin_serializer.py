@@ -29,5 +29,15 @@ from configapp.models.auth_user import User
 from configapp.models.model_teacher import Teacher
 
 class AdminSerializer(serializers.Serializer):
-    title=serializers.CharField(max_length=150)
+    phone_number=serializers.CharField(max_length=150)
     is_admin =serializers.BooleanField(default=True)
+
+    def update(self, instance, validated_data):
+        # Здесь происходит обновление данных
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+
+    def create(self, validated_data):
+        return User.objects.create(**validated_data)

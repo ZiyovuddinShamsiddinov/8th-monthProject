@@ -21,7 +21,7 @@ from .add_pegination import CustomPagination  # Импорт пагинации
 
 
 class StudentApi(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsStaffPermission,IsAdminPermission]
 
     @swagger_auto_schema(request_body=StudentPostSerializer)
     def post(self, request):
@@ -68,6 +68,7 @@ class StudentApi(APIView):
 
 
 class StudentUpdate(APIView):
+    permission_classes = [IsStaffPermission, IsAdminPermission]
 
     def get_object(self, pk):
         return get_object_or_404(Student, pk=pk)

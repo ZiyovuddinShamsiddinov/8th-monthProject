@@ -25,8 +25,8 @@ After=network.target
 [Service]
 User=root
 Group=www-data
-WorkingDirectory=/var/www1/8th-monthProject
-ExecStart=/var/www1/8th-monthProject/venv/bin/gunicorn \
+WorkingDirectory=/var/www2/8th-monthProject
+ExecStart=/var/www2/8th-monthProject/venv/bin/gunicorn \
           --access-logfile - \
           --workers 3 \
           --bind unix:/run/gunicorn.sock \

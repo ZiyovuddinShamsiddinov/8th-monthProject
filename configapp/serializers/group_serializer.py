@@ -13,4 +13,4 @@ from configapp.models.model_teacher import Teacher
 class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = GroupStudent
-        fields=["title","course","teacher","table"]
+        fields=["id","title","course","teacher","table","start_date","end_date"]

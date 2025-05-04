@@ -13,7 +13,7 @@ User = get_user_model()
 class UserManagementApi(APIView):
     permission_classes = [IsAdminPermission]
 
-    @swagger_auto_schema(request_body=UserSerializer)
+    @swagger_auto_schema(request_body=AdminSerializer)
     def post(self, request):
         serializer = AdminSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
@@ -22,16 +22,19 @@ class UserManagementApi(APIView):
 
     @swagger_auto_schema(responses={200: UserSerializer(many=True)})
     def get(self, request):
-        users = User.objects.all()
+        users = User.objects.filter(is_admin=True   )
         paginator = CustomPagination()  # <-- подключаем paginator
         result_page = paginator.paginate_queryset(users, request)
         serializer = AdminSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
 
+class UserManagementApiUpdate(APIView):
+    permission_classes = [IsAdminPermission]
+
     @swagger_auto_schema(request_body=UserSerializer)
-    def put(self, request, pk):
+    def put(self, request, phone_number):
         try:
-            user = User.objects.get(pk=pk)
+            user = User.objects.get(phone_number=phone_number)
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -41,9 +44,9 @@ class UserManagementApi(APIView):
             return Response({'status': True, 'message': 'User updated successfully'})
 
     @swagger_auto_schema(request_body=UserSerializer)
-    def delete(self, request, pk):
+    def delete(self, request, phone_number):
         try:
-            user = User.objects.get(pk=pk)
+            user = User.objects.get(phone_number=phone_number)
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
