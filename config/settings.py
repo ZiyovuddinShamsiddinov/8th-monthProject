@@ -82,7 +82,7 @@ SWAGGER_SETTINGS = {
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -157,23 +157,27 @@ CORS_ALLOW_ALL_ORIGINS = True
 # settings.py
 AUTH_USER_MODEL = 'configapp.User'
 
-STATIC_URL = 'static/'
+
 import os
+STATIC_URL = '/static/'
 
-#static fayllar yig'ish papkasi
-
-# Убедитесь, что STATICFILES_DIRS указывает только на дополнительные папки для статических файлов
 STATICFILES_DIRS = [
-    BASE_DIR / "static",  # Папка для статических файлов в вашем проекте
+    BASE_DIR / "static",
+]
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+]
+STATICFILES_EXCLUDED_APPS = [
+    'drf_yasg',  # если не используется
+    'rest_framework',
 ]
 
-# Укажите отдельную папку для сбора статических файлов (например, "static_collected")
-STATIC_ROOT = BASE_DIR / "static_collected"  # Папка, в которую будут собираться все статики
+STATIC_ROOT = os.path.join(BASE_DIR, 'static_collected')
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
